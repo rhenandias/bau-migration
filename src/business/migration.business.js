@@ -1,12 +1,16 @@
 const bling = require("../services/bling");
 const lojaIntegrada = require("../services/lojaIntegrada");
 const magento = require("../services/magento");
+const { elapsedTime } = require("../utils/time");
+const { exportToExcel } = require("../modules/excel");
+const { models } = require("../modules/sequelize");
+const { Op } = require("sequelize");
 
 const filename = __filename.slice(__dirname.length + 1) + " -";
 
 module.exports = {
   async exportarProduto(sku, exportarDescricao, exportarImagens, exportarSEO) {
-    console.log(filename, `Migrando produto para a Loja Integrada - SKU: ${sku}`);
+    console.log(filename, `Migrando produto - SKU: ${sku}`);
 
     // Adquirir os dados do produto no Bling (para obter o vínculo com a Loja Integrada)
     const produtoBling = await bling.produto(sku, "203426320");
@@ -130,4 +134,98 @@ module.exports = {
 
     await lojaIntegrada.alterarSEO(seo, dadosLojaIntegrada);
   },
+
+  async dumpProdutosMagento() {
+    const client = await magento.createClient();
+    const sessionId = await magento.login(client);
+
+    console.log(filename, "Adquirindo lista completa de produtos do Magento");
+
+    // Dump considerando todos os SKUs presentes no Magento:
+
+    const respostaProdutosMagento = await magento.catalogProductList(client, sessionId);
+    const arrayProdutosMagento = respostaProdutosMagento["storeView"]["item"];
+    const listaDeSkus = arrayProdutosMagento.map((produtoMagento) => produtoMagento["sku"]);
+
+    // Dump considerando apenas produtos ativos e com SKU numerico:
+
+    // const produtosAtivos = await models.tbproduto.findAll({
+    //   attributes: ["idsku"],
+    //   where: {
+    //     situacao: true,
+    //     idsku: {
+    //       [Op.regexp]: "^[0-9]+$",
+    //     },
+    //   },
+    //   raw: true,
+    // });
+
+    // const listaDeSkus = produtosAtivos.map((produto) => produto.idsku);
+
+    console.log(filename, "Iniciando extração de dados de produtos individuais");
+    const start = new Date();
+
+    let contador = 1;
+
+    const produtosComFalha = [];
+    const produtosProcessados = [];
+    const produtosFinais = [];
+
+    for (const sku of listaDeSkus) {
+      try {
+        console.log(filename, `Produto ${contador++}/${listaDeSkus.length}`);
+
+        const produtoMagento = await magento.catalogProductInfo(client, sessionId, sku);
+
+        const produto = produtoMagento["info"];
+
+        // Verificar presença de mais de uma categoria
+        const categorias = Array.isArray(produto.categories.item)
+          ? produto.categories.item.join(", ")
+          : produto.categories.item;
+
+        // Desestruturar e processar o resultado
+        produtosFinais.push({
+          product_id: produto["product_id"],
+          sku: produto["sku"],
+          categories: categorias,
+          name: produto["name"],
+          description: produto["description"],
+          short_description: produto["short_description"],
+          weight: produto["weight"],
+          status: produto["status"],
+          url_key: produto["url_key"],
+          url_path: produto["url_path"],
+          price: produto["price"],
+          meta_title: produto["meta_title"],
+          meta_keyword: produto["meta_keyword"],
+          meta_description: produto["meta_description"],
+        });
+
+        produtosProcessados.push(sku);
+      } catch (error) {
+        produtosComFalha.push(sku);
+        console.log(filename, "Falha para o SKU:", sku, "-", error.message);
+      }
+
+      // if (contador === 100) break;
+    }
+
+    try {
+      await magento.endSession(client, sessionId);
+    } catch (error) {
+      console.log(filename, "Não foi possível finalizar a sessão do Magento");
+    }
+
+    await exportToExcel(produtosFinais, "dump_produtos_magento", "Dump");
+
+    console.log(filename, "Dump finalizado");
+    console.log(filename, "Quantidade de produtos processados:", produtosProcessados.length);
+    console.log(filename, "Quantidade de produtos não processados:", produtosComFalha.length);
+    console.log(filename, "Tempo gasto no procedimento:", elapsedTime(start));
+
+    return { produtosFinais };
+  },
+
+  async exportarPacoteProdutos() {},
 };

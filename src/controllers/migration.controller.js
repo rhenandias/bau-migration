@@ -17,4 +17,14 @@ module.exports = {
       next(error);
     }
   },
+
+  async dumpProdutosMagento(req, res, next) {
+    try {
+      const response = await MigrationBusiness.dumpProdutosMagento();
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };

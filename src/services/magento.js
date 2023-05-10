@@ -21,10 +21,7 @@ module.exports = {
           resolve(client);
         })
         .catch((error) => {
-          console.log(
-            filename,
-            `Erro durante a criação do cliente: ${error.message}`
-          );
+          console.log(filename, `Erro durante a criação do cliente: ${error.message}`);
           reject(error);
         });
     });
@@ -65,15 +62,9 @@ module.exports = {
   // Lista de Pedidos de Venda
   async salesOrderList(client, sessionId) {
     return new Promise((resolve, reject) => {
-      let dataInicial = dayjs()
-        .subtract(14, "days")
-        .startOf("day")
-        .format("YYYY-MM-DD HH:mm:ss");
+      let dataInicial = dayjs().subtract(14, "days").startOf("day").format("YYYY-MM-DD HH:mm:ss");
 
-      let dataFinal = dayjs()
-        .add(1, "days")
-        .endOf("day")
-        .format("YYYY-MM-DD HH:mm:ss");
+      let dataFinal = dayjs().add(1, "days").endOf("day").format("YYYY-MM-DD HH:mm:ss");
 
       console.log(filename, "Data Inicial:", dataInicial);
       console.log(filename, "Data Final:", dataFinal);
@@ -135,11 +126,7 @@ module.exports = {
           reject();
         })
         .catch((error) => {
-          console.log(
-            filename,
-            "Erro durante a chamada 'salesOrderList':",
-            error.message
-          );
+          console.log(filename, "Erro durante a chamada 'salesOrderList':", error.message);
           reject(error);
         });
     });
@@ -176,10 +163,7 @@ module.exports = {
           });
         })
         .catch((error) => {
-          console.log(
-            filename,
-            `Erro durante a chamada 'catalogProductInfo': ${error.message}`
-          );
+          console.log(filename, `Erro durante a chamada 'catalogProductInfo': ${error.message}`);
           reject(error);
         });
     });
@@ -191,6 +175,25 @@ module.exports = {
       const callArgs = {
         sessionId,
       };
+
+      // Resultado:
+      // "storeView": {
+      //   "item": [
+      //       {
+      //           "product_id": "51",
+      //           "sku": "Tes01",
+      //           "name": "Produto teste Simples",
+      //           "set": "4",
+      //           "type": "simple",
+      //           "category_ids": {
+      //               "item": "2"
+      //           },
+      //           "website_ids": {
+      //               "item": "1"
+      //           }
+      //       },
+      //     ]
+      //   }
 
       client
         .catalogProductListAsync(callArgs)
@@ -208,10 +211,7 @@ module.exports = {
           });
         })
         .catch((error) => {
-          console.log(
-            filename,
-            `Erro durante a chamada 'catalogProductInfo': ${error.message}`
-          );
+          console.log(filename, `Erro durante a chamada 'catalogProductInfo': ${error.message}`);
           reject(error);
         });
     });
@@ -237,19 +237,11 @@ module.exports = {
           });
 
           parser.parseStringPromise(result[1]).then(function (result) {
-            resolve(
-              result["SOAP-ENV:Body"][
-                "ns1:catalogProductAttributeMediaListResponse"
-              ]
-            );
+            resolve(result["SOAP-ENV:Body"]["ns1:catalogProductAttributeMediaListResponse"]);
           });
         })
         .catch((error) => {
-          console.log(
-            filename,
-            "Erro durante a chamada 'catalogProductAttributeMediaList':",
-            error.message
-          );
+          console.log(filename, "Erro durante a chamada 'catalogProductAttributeMediaList':", error.message);
           reject(error);
         });
     });
@@ -277,17 +269,11 @@ module.exports = {
             console.dir(result);
             console.log("Done");
 
-            resolve(
-              result["SOAP-ENV:Body"]["ns1:catalogProductAttributeListResponse"]
-            );
+            resolve(result["SOAP-ENV:Body"]["ns1:catalogProductAttributeListResponse"]);
           });
         })
         .catch((error) => {
-          console.log(
-            filename,
-            "Erro durante a chamada 'catalogProductAttributeList':",
-            error.message
-          );
+          console.log(filename, "Erro durante a chamada 'catalogProductAttributeList':", error.message);
           reject(error);
         });
     });
@@ -316,11 +302,36 @@ module.exports = {
           });
         })
         .catch((error) => {
-          console.log(
-            filename,
-            "Erro durante a chamada 'salesOrderInfo':",
-            error.message
-          );
+          console.log(filename, "Erro durante a chamada 'salesOrderInfo':", error.message);
+          reject(error);
+        });
+    });
+  },
+
+  async catalogCategoryTree(client, sessionId) {
+    return new Promise((resolve, reject) => {
+      const callArgs = {
+        sessionId,
+      };
+
+      client
+        .catalogCategoryTreeAsync(callArgs)
+        .then((result) => {
+          console.log(result);
+
+          // var parser = new xml2js.Parser({
+          //   ignoreAttrs: true,
+          //   explicitRoot: false,
+          //   mergeAttrs: true,
+          //   explicitArray: false,
+          // });
+
+          // parser.parseStringPromise(result[1]).then(function (result) {
+          //   resolve(result["SOAP-ENV:Body"]["ns1:salesOrderInfoResponse"]);
+          // });
+        })
+        .catch((error) => {
+          console.log(filename, "Erro durante a chamada 'salesOrderInfo':", error.message);
           reject(error);
         });
     });

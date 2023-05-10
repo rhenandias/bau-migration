@@ -10,6 +10,8 @@ function load(routes) {
   
   routes.get("/magento/sale", controller.salesOrderInfo);
   routes.get("/magento/sales", controller.salesOrderList);
+
+  routes.get("/magento/categories", controller.catalogCategoryTree);
 }
 
 module.exports = { load };

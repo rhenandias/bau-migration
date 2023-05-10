@@ -47,9 +47,7 @@ module.exports = {
     try {
       const { productId } = req.query;
 
-      const response = await MagentoBusiness.catalogProductAttributeMediaList(
-        productId
-      );
+      const response = await MagentoBusiness.catalogProductAttributeMediaList(productId);
 
       res.status(200).json({ message: response });
     } catch (error) {
@@ -74,6 +72,16 @@ module.exports = {
       const { orderIncrementId } = req.query;
 
       const response = await MagentoBusiness.salesOrderInfo(orderIncrementId);
+
+      res.status(200).json({ message: response });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async catalogCategoryTree(req, res, next) {
+    try {
+      const response = await MagentoBusiness.catalogCategoryTree();
 
       res.status(200).json({ message: response });
     } catch (error) {

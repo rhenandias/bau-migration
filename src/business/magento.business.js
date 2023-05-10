@@ -82,4 +82,16 @@ module.exports = {
 
     return response;
   },
+
+  async catalogCategoryTree() {
+    const client = await magento.createClient();
+
+    const sessionId = await magento.login(client);
+
+    const response = await magento.catalogCategoryTree(client, sessionId);
+
+    await magento.endSession(client, sessionId);
+
+    return response;
+  },
 };
