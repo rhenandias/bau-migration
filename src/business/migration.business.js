@@ -46,8 +46,8 @@ module.exports = {
     return "Exportação realizada com sucesso.";
   },
 
-  async dadosMagento(sku, client, sessionId) {
-    if (!client && !sessionId) {
+  async dadosMagento(sku, client = null, sessionId = null) {
+    if (client === null && sessionId === null) {
       client = await magento.createClient();
       sessionId = await magento.login(client);
     }
