@@ -139,7 +139,7 @@ module.exports = {
     description = description.substring(0, 250);
 
     // Manipulação de Título
-    title = title.replace("Baú da Eletrônica", "Componex");
+    // title = title.replace("Baú da Eletrônica", "Componex");
 
     const dadosLojaIntegrada = {
       description,
@@ -286,7 +286,7 @@ module.exports = {
 
         produtosProcessados.push(sku);
       } catch (error) {
-        console.log(filename, `Falha: ${sku}`);
+        console.log(filename, `Falha SKU: ${sku}`);
 
         produtosComFalha.push(sku);
       }
@@ -306,9 +306,7 @@ module.exports = {
     console.log(filename, `Quantidade de produtos com falha: ${produtosComFalha.length}`);
 
     return {
-      skuInicial,
-      skuFinal,
-      listaDeSkus,
+      produtosComFalha,
     };
   },
 };
