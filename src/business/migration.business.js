@@ -9,7 +9,14 @@ const { Op } = require("sequelize");
 const filename = __filename.slice(__dirname.length + 1) + " -";
 
 module.exports = {
-  async exportarProduto(sku, exportarDescricao, exportarImagens, exportarSEO) {
+  async exportarProduto(
+    sku,
+    exportarDescricao,
+    exportarImagens,
+    exportarSEO,
+    client = null,
+    sessionId = null
+  ) {
     console.log(filename, `Migrando produto - SKU: ${sku}`);
 
     // Adquirir os dados do produto no Bling (para obter o vínculo com a Loja Integrada)
@@ -19,7 +26,7 @@ module.exports = {
     const produtoLojaIntegrada = await lojaIntegrada.detalhesProduto(produtoBling.idComponex);
 
     // Adquirir os dados do produto no Magento
-    const { produtoMagento, imagensMagento } = await this.dadosMagento(sku);
+    const { produtoMagento, imagensMagento } = await this.dadosMagento(sku, client, sessionId);
 
     // Exportar as imagens
     if (exportarImagens) {
@@ -39,10 +46,11 @@ module.exports = {
     return "Exportação realizada com sucesso.";
   },
 
-  async dadosMagento(sku) {
-    const client = await magento.createClient();
-
-    const sessionId = await magento.login(client);
+  async dadosMagento(sku, client, sessionId) {
+    if (!client && !sessionId) {
+      client = await magento.createClient();
+      sessionId = await magento.login(client);
+    }
 
     const produtoMagento = await magento.catalogProductInfo(client, sessionId, sku);
 
@@ -254,6 +262,10 @@ module.exports = {
 
     const listaDeSkus = listaDeSkusNumericos.filter((sku) => sku >= skuInicial && sku < skuFinal);
 
+    // Adquirir uma nova sessão do Magento para executar as migrações
+    const client = magento.createClient();
+    const sessionId = magento.login(client);
+
     // Executar a exportação para cada um dos SKUs de resultado
     const produtosProcessados = [];
     const produtosComFalha = [];
@@ -264,14 +276,22 @@ module.exports = {
 
     for (const sku of listaDeSkus) {
       try {
-        await this.exportarProduto(sku, true, true, true);
+        await this.exportarProduto(sku, true, true, true, client, sessionId);
 
         produtosProcessados.push(sku);
       } catch (error) {
-        console.log(filename, `Falha: ${sku}  - ${error.message}`);
+        console.log(filename, `Falha: ${sku}`);
 
         produtosComFalha.push(sku);
       }
+    }
+
+    // Encerrar a sessão do Magento
+    try {
+      magento.endSession(client, sessionId);
+      console.log(filename, "Sessão do Magento finalizada.");
+    } catch (error) {
+      console.log(filename, "Ocorreu um erro durante a finalização da sessão do Magento.");
     }
 
     console.log(filename, "Procedimento de exportação finalizado");
