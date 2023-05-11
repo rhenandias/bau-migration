@@ -47,19 +47,25 @@ module.exports = {
   },
 
   async dadosMagento(sku, client = null, sessionId = null) {
+    let killSession = false;
+
     if (client === null && sessionId === null) {
       client = await magento.createClient();
       sessionId = await magento.login(client);
+
+      killSession = true;
     }
 
     const produtoMagento = await magento.catalogProductInfo(client, sessionId, sku);
 
     const imagensMagento = await magento.catalogProductAttributeMediaList(client, sessionId, sku);
 
-    try {
-      await magento.endSession(client, sessionId);
-    } catch (error) {
-      console.log(filename, "Não foi possível finalizar a sessão do Magento");
+    if (killSession) {
+      try {
+        await magento.endSession(client, sessionId);
+      } catch (error) {
+        console.log(filename, "Não foi possível finalizar a sessão do Magento");
+      }
     }
 
     return { produtoMagento, imagensMagento };
