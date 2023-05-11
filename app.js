@@ -24,7 +24,7 @@ app.use("/api", require("./src/routes"));
 
 app.get(["/", "/api"], (req, res) => {
   return res.status(200).send({
-    message: "Binx API",
+    message: "API de Migração",
   });
 });
 

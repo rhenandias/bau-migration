@@ -20,7 +20,7 @@ module.exports = {
     console.log(filename, `Migrando produto - SKU: ${sku}`);
 
     // Adquirir os dados do produto no Bling (para obter o vínculo com a Loja Integrada)
-    const produtoBling = await bling.produto(sku, "203426320");
+    const produtoBling = await bling.produto(sku, "204459450");
 
     // Adquirir os dados do produto na Loja Integrada (para obter o vínculo de SEO)
     const produtoLojaIntegrada = await lojaIntegrada.detalhesProduto(produtoBling.idComponex);
@@ -304,6 +304,8 @@ module.exports = {
     console.log(filename, `Tempo gasto no procedimento: ${elapsedTime(start)}`);
     console.log(filename, `Quantidade de produtos processados: ${produtosProcessados.length}`);
     console.log(filename, `Quantidade de produtos com falha: ${produtosComFalha.length}`);
+    console.log(filename, `Produtos com falha:`);
+    console.dir(produtosComFalha, { maxArrayLength: null });
 
     return {
       produtosComFalha,
