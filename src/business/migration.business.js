@@ -288,7 +288,7 @@ module.exports = {
 
     // Encerrar a sessão do Magento
     try {
-      magento.endSession(client, sessionId);
+      await magento.endSession(client, sessionId);
       console.log(filename, "Sessão do Magento finalizada.");
     } catch (error) {
       console.log(filename, "Ocorreu um erro durante a finalização da sessão do Magento.");
