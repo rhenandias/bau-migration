@@ -263,8 +263,8 @@ module.exports = {
     const listaDeSkus = listaDeSkusNumericos.filter((sku) => sku >= skuInicial && sku < skuFinal);
 
     // Adquirir uma nova sessão do Magento para executar as migrações
-    const client = magento.createClient();
-    const sessionId = magento.login(client);
+    const client = await magento.createClient();
+    const sessionId = await magento.login(client);
 
     // Executar a exportação para cada um dos SKUs de resultado
     const produtosProcessados = [];
