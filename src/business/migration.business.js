@@ -227,5 +227,62 @@ module.exports = {
     return { produtosFinais };
   },
 
-  async exportarPacoteProdutos() {},
+  async executarMigracao(skuInicial, skuFinal) {
+    // Verifica existência de SKU inicial ou final
+    if (skuInicial === undefined || skuInicial === null) skuInicial = 0;
+    if (skuFinal === undefined || skuFinal === null) skuFinal = 9999;
+
+    // Adquirir lista de SKUs ativos dentro do range informado
+    // Os SKUs no banco são salvos como strings
+    // Primeiro adquirir a lista completa e converter para número
+    // Depois disso, filtrar a lista de SKUs numéricos para isolar o intervalo desejado
+
+    const produtosAtivos = await models.tbproduto.findAll({
+      attributes: ["idsku"],
+      where: {
+        situacao: true,
+        idsku: {
+          [Op.regexp]: "^[0-9]+$",
+        },
+      },
+      raw: true,
+    });
+
+    const listaDeSkusNumericos = produtosAtivos
+      .map((produto) => parseInt(produto.idsku))
+      .sort((a, b) => a - b);
+
+    const listaDeSkus = listaDeSkusNumericos.filter((sku) => sku >= skuInicial && sku < skuFinal);
+
+    // Executar a exportação para cada um dos SKUs de resultado
+    const produtosProcessados = [];
+    const produtosComFalha = [];
+
+    console.log(filename, "Iniciando exportação de produtos");
+
+    const start = new Date();
+
+    for (const sku of listaDeSkus) {
+      try {
+        await this.exportarProduto(sku, true, true, true);
+
+        produtosProcessados.push(sku);
+      } catch (error) {
+        console.log(filename, `Falha: ${sku}  - ${error.message}`);
+
+        produtosComFalha.push(sku);
+      }
+    }
+
+    console.log(filename, "Procedimento de exportação finalizado");
+    console.log(filename, `Tempo gasto no procedimento: ${elapsedTime(start)}`);
+    console.log(filename, `Quantidade de produtos processados: ${produtosProcessados.length}`);
+    console.log(filename, `Quantidade de produtos com falha: ${produtosComFalha.length}`);
+
+    return {
+      skuInicial,
+      skuFinal,
+      listaDeSkus,
+    };
+  },
 };
