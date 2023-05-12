@@ -286,7 +286,7 @@ module.exports = {
 
         produtosProcessados.push(sku);
       } catch (error) {
-        console.log(filename, `Falha SKU: ${sku}`);
+        console.log(filename, `Falha SKU: ${sku} -  ${error.message}`);
 
         produtosComFalha.push(sku);
       }
