@@ -78,4 +78,18 @@ module.exports = {
         });
     });
   },
+
+  async listarCategorias(nextUrl = "") {
+    return new Promise((resolve, reject) => {
+      api
+        .get(nextUrl || "/categoria")
+        .then((data) => {
+          resolve(data.data);
+        })
+        .catch((error) => {
+          console.log(filename, `${error.message}:`, error.response.data);
+          reject(error);
+        });
+    });
+  },
 };
