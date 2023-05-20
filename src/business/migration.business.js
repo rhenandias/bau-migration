@@ -5,6 +5,8 @@ const { elapsedTime } = require("../utils/time");
 const { exportToExcel } = require("../modules/excel");
 const { models } = require("../modules/sequelize");
 const { Op } = require("sequelize");
+const Excel = require("exceljs");
+const { delay } = require("../utils/delay");
 
 const filename = __filename.slice(__dirname.length + 1) + " -";
 
@@ -309,6 +311,152 @@ module.exports = {
 
     return {
       produtosComFalha,
+    };
+  },
+
+  async migrarCategorias(skuInicial, skuFinal) {
+    // Verifica existência de SKU inicial ou final
+    if (skuInicial === undefined || skuInicial === null) skuInicial = 0;
+    if (skuFinal === undefined || skuFinal === null) skuFinal = 9999;
+
+    // Adquirir categorias do Magento
+
+    // Formato do objeto gerado:
+    // {
+    //   "sku": "categorias magento",
+    //   "1810": "1, 2, 3"
+    // }
+
+    const workbookMagento = new Excel.Workbook();
+
+    await workbookMagento.xlsx.readFile("./files/dump_produtos_magento.xlsx");
+
+    const worksheetMagento = workbookMagento.getWorksheet("Dump");
+
+    const categoriasMagento = {};
+
+    worksheetMagento.eachRow((row, rowNumber) => {
+      let sku = "";
+      let categorias = "";
+
+      try {
+        sku = row.findCell(2).text;
+      } catch (error) {}
+
+      try {
+        categorias = row.findCell(3).text;
+      } catch (error) {}
+
+      categoriasMagento[sku] = categorias;
+    });
+
+    // Adquirir categorias da Loja Integrada
+
+    // Formato do objeto gerado:
+    // {
+    //   "id magento": "id loja integrada"
+    // }
+
+    const workbookLojaIntegrada = new Excel.Workbook();
+
+    await workbookLojaIntegrada.xlsx.readFile("./files/dump_hesley.xlsx");
+
+    const worksheetLojaIntegrada = workbookLojaIntegrada.getWorksheet("Categorias");
+
+    const categoriasLojaIntegrada = {};
+
+    worksheetLojaIntegrada.eachRow((row, rowNumber) => {
+      let idLojaIntegrada = "";
+      let idMagento = "";
+
+      try {
+        idLojaIntegrada = row.getCell(1).text;
+      } catch (error) {
+        console.log("não 1");
+      }
+
+      try {
+        idMagento = row.getCell(5).text;
+      } catch (error) {
+        console.log("não 2");
+      }
+
+      categoriasLojaIntegrada[idMagento] = idLojaIntegrada;
+    });
+
+    // Prosseguir com a Migração
+
+    // Adquirir lista de SKUs ativos dentro do range informado
+    // Os SKUs no banco são salvos como strings
+    // Primeiro adquirir a lista completa e converter para número
+    // Depois disso, filtrar a lista de SKUs numéricos para isolar o intervalo desejado
+
+    const produtosAtivos = await models.tbproduto.findAll({
+      attributes: ["idsku"],
+      where: {
+        situacao: true,
+        idsku: {
+          [Op.regexp]: "^[0-9]+$",
+        },
+      },
+      raw: true,
+    });
+
+    const listaDeSkusNumericos = produtosAtivos
+      .map((produto) => parseInt(produto.idsku))
+      .sort((a, b) => a - b);
+
+    const listaDeSkus = listaDeSkusNumericos.filter((sku) => sku >= skuInicial && sku < skuFinal);
+
+    // Executar a migração de categorias
+    const produtosProcessados = [];
+    const produtosComFalha = [];
+
+    const start = new Date();
+
+    for (const sku of listaDeSkus) {
+      try {
+        console.log(filename, "Migrando categorias do SKU:", sku);
+
+        // Adquirir os dados do produto no Bling (para obter o vínculo com a Loja Integrada)
+        const produtoBling = await bling.produto(sku, "204459450");
+
+        const categoriasProdutoMagento = categoriasMagento[sku].split(",") || [];
+
+        const categoriasFinais = [];
+
+        for (const idCategoriaMagento of categoriasProdutoMagento) {
+          const idCategoriaLojaIntegrada = categoriasLojaIntegrada[idCategoriaMagento.trim()];
+
+          if (idCategoriaLojaIntegrada) {
+            categoriasFinais.push(`/api/v1/categoria/${idCategoriaLojaIntegrada}`);
+          }
+        }
+
+        const dados = {
+          categorias: categoriasFinais,
+        };
+
+        await lojaIntegrada.alterarProduto(produtoBling.idComponex, dados);
+
+        produtosProcessados.push(sku);
+
+        await delay(200);
+      } catch (error) {
+        produtosComFalha.push(sku);
+        console.log(filename, "Falha na migração de categorias do SKU:", sku);
+      }
+    }
+
+    console.log(filename, "Procedimento de exportação de categorias finalizado");
+    console.log(filename, `Tempo gasto no procedimento: ${elapsedTime(start)}`);
+    console.log(filename, `Quantidade de produtos processados: ${produtosProcessados.length}`);
+    console.log(filename, `Quantidade de produtos com falha: ${produtosComFalha.length}`);
+    console.log(filename, `Produtos com falha:`);
+    console.dir(produtosComFalha, { maxArrayLength: null });
+
+    return {
+      message: "Migração de categorias finalizada",
     };
   },
 };

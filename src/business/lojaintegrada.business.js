@@ -33,10 +33,12 @@ module.exports = {
     }
 
     const categoriasDesestruturadas = categorias.map((categoria) => {
+      console.log(categoria);
       return {
         id: categoria.id,
         nome: categoria.nome,
         resource_uri: categoria.resource_uri,
+        url: categoria.url,
       };
     });
 

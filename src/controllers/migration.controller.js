@@ -39,4 +39,16 @@ module.exports = {
       next(error);
     }
   },
+
+  async migrarCategorias(req, res, next) {
+    try {
+      const { skuInicial, skuFinal } = req.query;
+
+      const response = await MigrationBusiness.migrarCategorias(skuInicial, skuFinal);
+
+      res.status(200).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
