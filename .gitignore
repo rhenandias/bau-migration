@@ -1,7 +1,6 @@
 # Custom
 secrets/
 release/
-*.xlsx
 
 # Logs
 logs
